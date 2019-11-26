@@ -126,6 +126,7 @@
     <ClCompile Include="cis29lab4.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="PageRank - Copy.html" />
     <None Include="PageRank.html" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

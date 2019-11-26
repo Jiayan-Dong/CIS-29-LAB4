@@ -20,6 +20,7 @@ Data Files: PageRank.html
 #include <algorithm>
 #include <functional>
 #include <numeric> 
+#include <tuple>
 
 using namespace std;
 
@@ -191,30 +192,35 @@ public:
 class PageRanker
 {
 private:
-	vector<pair<string, double>> pageRanks;
+	vector<tuple<string, double, int>> pageRanks;
+	vector<vector<int>> matrix;
 	double tolerance;
-	double pageRank(vector<pair<shared_ptr<double>, int>> r_ob)
+	double dump;
+	double _calc()
 	{
-		return accumulate(r_ob.begin(), r_ob.end(), 0.0, [&](double sum, pair<shared_ptr<double>, int> page) {return sum + *(page.first) / static_cast<double>(page.second); });
-	}
-	double _calc(vector<vector<pair<shared_ptr<double>, int>>>& r_ob)
-	{
-		double diff = pageRanks.size();
-		for (int i = 0; i < pageRanks.size(); i++)
-		{
-			double newRank = pageRank(r_ob[i]);
-			double newDiff = abs(pageRanks[i].second - pageRank(r_ob[i]));
-			if (abs(newDiff) < diff)
-				diff = abs(newDiff);
-			pageRanks[i].second = newRank;	 
-		}
-		return diff;
+		vector<double> diffs;
+		int col = 0;
+		for_each(pageRanks.begin(), pageRanks.end(), [&](tuple<string, double, int>& t) {
+			double pre = get<1>(t);
+			int row = 0;
+			get<1>(t) = accumulate(pageRanks.begin(), pageRanks.end(), 1-dump, [&](double sum, tuple<string, double, int> tu) {
+				if(matrix[row++][col])
+					return sum + dump * get<1>(tu) / static_cast<double>(get<2>(tu));
+				return sum;
+				});
+			col++;
+			diffs.push_back(abs(pre - get<1>(t)));
+			});
+		return accumulate(diffs.begin(), diffs.end(), 0.0);
 	}
 public:
-	PageRanker(vector<string> names)
+	PageRanker(vector<string> names, vector<vector<int>> m)
 	{
-		for_each(names.begin(), names.end(), [&](string n) {pageRanks.push_back(pair<string, double>(n, 1)); });
-		tolerance = 0.001;
+		int i = 0;
+		matrix = m;
+		for_each(names.begin(), names.end(), [&](string n) {pageRanks.push_back(tuple<string, double, int>(n, 1.0, accumulate(matrix[i].begin(), matrix[i].end(), 0))); i++; });
+		tolerance = 0.0001;
+		dump = 0.85;
 	}
 	
 	int getSize()
@@ -222,27 +228,14 @@ public:
 		return pageRanks.size();
 	}
 
-	vector<pair<string, double>> getPageRanks()
+	vector<tuple<string, double, int>> getPageRanks()
 	{
 		return pageRanks;
 	}
 
-	void calcRanks(vector<string> names, vector<vector<int>> matrix)
+	void calcRanks()
 	{
-		vector<vector<pair<shared_ptr<double>, int>>> ranks_outbounds(names.size());
-		vector<int> outbounds;
-		for_each(matrix.begin(), matrix.end(), [&](auto v) {
-			outbounds.push_back(accumulate(v.begin(), v.end(), 0));
-			});
-		for (int col = 0; col < matrix.size(); col++)
-		{
-			for (int row = 0; row < matrix.size(); row++)
-			{
-				if (matrix[row][col])
-					ranks_outbounds[col].push_back(pair<shared_ptr<double>, int>(make_shared<double>(pageRanks[row].second), outbounds[row]));
-			}
-		}
-		while (tolerance < _calc(ranks_outbounds));
+		while (tolerance < _calc());
 	}
 };
 
@@ -251,10 +244,10 @@ class PageRankOutput
 private:
 	string outfilename;
 public:
-	void outputOnScreen(vector<pair<string, double>> prs)
+	void outputOnScreen(vector<tuple<string, double, int>> tuples)
 	{
-		for (pair<string, double> p : prs)
-			cout << setw(20) << setiosflags(ios::left) << p.first << "PageRank: " << setprecision(3) << setiosflags(ios::fixed)<< p.second << endl;
+		for (tuple<string, double, int> t : tuples)
+			cout << setw(20) << setiosflags(ios::left) << get<0>(t) << "PageRank: " << setprecision(3) << setiosflags(ios::fixed)<< get<1>(t) << endl;
 	}
 };
 
@@ -264,8 +257,8 @@ int main()
 	htmlProcessor.process();
 	AdjacencyMatrix matrix;
 	matrix.insertAll(htmlProcessor.getHTMLData());
-	PageRanker pageRanker(matrix.getNames());
-	pageRanker.calcRanks(matrix.getNames(), matrix.getMatrix());
+	PageRanker pageRanker(matrix.getNames(), matrix.getMatrix());
+	pageRanker.calcRanks();
 	PageRankOutput output;
 	output.outputOnScreen(pageRanker.getPageRanks());
 	system("pause");
