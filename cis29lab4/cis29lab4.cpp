@@ -50,19 +50,6 @@ public:
 		data = d;
 	}
 
-	//Node(Node&& n)
-	//{
-	//	name = move(n.name);
-	//	data = move(n.data);
-	//	subNodes = move(n.subNodes);
-	//	n.name.clear();
-	//	n.name.shrink_to_fit();
-	//	n.data.clear();
-	//	n.data.shrink_to_fit();
-	//	n.subNodes.clear();
-	//	n.subNodes.shrink_to_fit();
-	//}
-
 	//Setter
 	void setName(string n)
 	{
@@ -103,14 +90,14 @@ public:
 class HTMLProcessor
 {
 private:
-	string infilename;	//xml filename
-	vector<Node> HTMLData;	//vector contain xmlData node
+	string infilename;	//html filename
+	vector<Node> HTMLData;	//vector contain htmlData node
 	regex titlePattern;	//regex leaf pattern
 	regex linkPattern;	//regex leaf pattern
 	regex divBeginPattern;	//regex div begin pattern
 	regex divEndPattern;	//regex div end pattern
 public:
-	//Overload constuctor that initalize the data with xml filename
+	//Overload constuctor that initalize the data with html filename
 	HTMLProcessor(string i)
 	{
 		infilename = i;
@@ -119,7 +106,7 @@ public:
 		divBeginPattern.assign(R"(<div (.*)=\"(.*)\">)");
 		divEndPattern.assign(R"(</div>)");
 	}
-	//Generic Public process function to process all xml noded
+	//Generic Public process function to process all html nodes
 	void process()
 	{
 		string line;
